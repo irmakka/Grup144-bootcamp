@@ -1,6 +1,6 @@
 # Grup144-bootcamp
 
-# 🚀 1. SCRUM Raporu - TaskBuddy AI
+# 🚀 1. SPRING Raporu - TaskBuddy AI
 
 ## 📌 Proje Adı: TaskBuddy AI
 **Açıklama:**  
