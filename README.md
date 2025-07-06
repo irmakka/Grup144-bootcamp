@@ -23,9 +23,9 @@ Kullanıcıların görevlerini yönetebildiği (To-Do App) ve aynı sayfa üzeri
 |------|----------|--------------|------------|------|
 | Proje fikrinin netleştirilmesi | Tüm Grup | 2 | 5 | 5 |
 | UI/UX araştırması, örnek görseller | Zeynep | 2 | 4 | 5 |
-| Kullanıcı senaryosu ve akışı yazımı | Irmak | 2 | 5 | 6 |
+| Kullanıcı senaryosu ve akışı yazımı | Mertcan| 2 | 5 | 6 |
 | Chat özelliği için benzer sistem araştırması | Mertcan | 1.5 | 3 | 4 |
-| Proje deposunun oluşturulması | Mertcan | 1 | 3 | 3 |
+| Proje deposunun oluşturulması |Irmak| 1 | 3 | 3 |
 | Scrum raporu ve planlama dökümanı hazırlanması | Irmak | 1 | 4 | 4 |
 
 
