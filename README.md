@@ -27,5 +27,9 @@ Kullanıcıların görevlerini yönetebildiği (To-Do App) ve aynı sayfa üzeri
 | Chat özelliği için benzer sistem araştırması | Mertcan | 1.5 | 3 | 4 |
 | Proje deposunun oluşturulması |Irmak| 1 | 3 | 3 |
 | Scrum raporu ve planlama dökümanı hazırlanması | Irmak | 1 | 4 | 4 |
+## 📅 2.Sprint 
+
+
+
 
 
