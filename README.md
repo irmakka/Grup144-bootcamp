@@ -93,7 +93,8 @@ Sprint Puanı : 39
 | **Toplam**                |      |      |        | **39** |
 
 Total Yapılan işler :
-<img width="1074" height="680" alt="Ekran görüntüsü 2025-07-20 132904" src="https://github.com/user-attachments/assets/a8d84990-1dd5-4bd8-bb12-58705e7791d7" />
+<img width="1064" height="652" alt="Ekran görüntüsü 2025-07-29 140819" src="https://github.com/user-attachments/assets/e49b6109-ea86-4cae-a249-834bc2d91e4b" />
+
 
 Uygulamanın Son Hali : 
 ![WhatsApp Image 2025-07-29 at 13 41 24](https://github.com/user-attachments/assets/23eec0b1-5acc-4a05-8b7c-b393669331c8)
