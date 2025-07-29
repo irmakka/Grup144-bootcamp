@@ -79,6 +79,25 @@ Süre: 7
 
 Zorluk: 2
 
+## 📅 3.SPRINT
 
+Bu sprintte UI/UX  ve AI geliştirme fikirleri bitirilip geliştirmeler yapıldı. Uygulama bitirildi ve son görünümü gözden geçirildi . 
+Toplam Puan :126
+Sprint Puanı : 39
 
+| Görev                     | Süre | Önem | Zorluk | Puan   |
+| ------------------------- | ---- | ---- | ------ | ------ |
+| UI/UX fikirlerini bitirme | 5    | 3    | 1      | 9      |
+| AI fikirlerini bitirme    | 5    | 5    | 2      | 12     |
+| Geliştirme + test         | 8    | 6    | 4      | 18     |
+| **Toplam**                |      |      |        | **39** |
+
+Total Yapılan işler :
+<img width="1074" height="680" alt="Ekran görüntüsü 2025-07-20 132904" src="https://github.com/user-attachments/assets/a8d84990-1dd5-4bd8-bb12-58705e7791d7" />
+
+Uygulamanın Son Hali : 
+![WhatsApp Image 2025-07-29 at 13 41 24](https://github.com/user-attachments/assets/23eec0b1-5acc-4a05-8b7c-b393669331c8)
+![WhatsApp Image 2025-07-29 at 13 41 24 (1)](https://github.com/user-attachments/assets/545dbebf-cc4f-4d17-bf54-0496d6724985)
+
+Bu Sprint Özeti : Uygulama için geliştirilmesi gereken özellikler not alındı , uygulandı ve uygulama  son haline geldi . 
 
