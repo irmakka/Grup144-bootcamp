@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskbuddyAI: AI Destekli Yeni Nesil Todo List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 1200px; /* Daha geniş bir maksimum genişlik */
+            padding: 30px;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column; /* Mobil için varsayılan */
+            gap: 2rem; /* Paneller arası boşluk */
+        }
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row; /* Masaüstü için yan yana */
+            }
+            .left-panel, .right-panel {
+                flex: 1; /* Eşit genişlik */
+            }
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+        .todo-item.completed .task-text {
+            text-decoration: line-through;
+            color: #a0aec0;
+        }
+        .fixed-chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px; /* Varsayılan genişlik */
+            height: 500px; /* Varsayılan yükseklik */
+            min-width: 300px;
+            min-height: 180px; /* Başlık + API Input + Chat Input yüksekliği */
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column; /* İçeriği dikey sırala */
+            overflow: hidden; /* İçerik taşmasını gizle, scrollbarı flex-grow alana bırak */
+            z-index: 1000;
+            resize: both; /* Hem yatay hem dikey yeniden boyutlandırmaya izin ver */
+        }
+
+        .chat-header {
+            background-color: #4f46e5;
+            color: white;
+            padding: 12px 16px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            cursor: grab; /* Taşıma imleci */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0; /* Küçülmesini engelle */
+        }
+
+        .api-key-input-container {
+            padding: 10px 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #edf2f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0; /* Küçülmesini engelle */
+        }
+
+        .chat-messages {
+            flex-grow: 1; /* Mevcut alanı doldurmasını sağla */
+            padding: 15px;
+            overflow-y: auto; /* Sohbet geçmişi için kaydırma çubuğu */
+            display: flex; /* Mesajları dikeyde sırala */
+            flex-direction: column;
+            gap: 10px;
+            background-color: #f9fafb;
+            /* minimized durumda gizlemek için */
+            /* Eğer display: none; ile gizlenirse flex-grow etkisini kaybeder */
+        }
+        /* .chat-messages.hidden kaldırıldı */
+
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid #edf2f7;
+            background-color: #ffffff;
+            display: flex;
+            flex-shrink: 0; /* Küçülmesini engelle - her zaman görünür kalmalı */
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #e0e7ff;
+            color: #374151;
+            padding: 8px 12px;
+            border-radius: 15px 15px 0 15px;
+            max-width: 80%;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: #d1fae5;
+            color: #374151;
+            padding: 8px 12px;
+            border-radius: 15px 15px 15px 0;
+            max-width: 80%;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .calendar-day {
+            padding: 8px;
+            border-radius: 8px;
+            background-color: #f0f2f5;
+            font-weight: 500;
+            min-height: 50px; /* Takvim kutucukları için minimum yükseklik */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: relative;
+        }
+        .calendar-day.today {
+            background-color: #bfdbfe; /* Mavi tonu */
+            color: #1e40af;
+            font-weight: bold;
+        }
+        .calendar-day.has-task {
+            background-color: #a7f3d0; /* Yeşil tonu */
+            color: #065f46;
+            font-weight: bold;
+        }
+        .calendar-day.has-task::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #10b981;
+            border-radius: 50%;
+        }
+        .calendar-day-header {
+            font-weight: bold;
+            color: #4a5568;
+            padding: 5px 0;
+        }
+        .toggle-button {
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 5px;
+            transition: transform 0.2s ease-in-out;
+        }
+        .toggle-button.minimized {
+            transform: rotate(180deg);
+        }
+        /* API durum göstergesi */
+        .api-status-indicator {
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-6">
+    <div class="container mx-auto mt-8 bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-6">TaskbuddyAI</h1>
+        <p class="text-center text-gray-600 mb-8">AI Destekli Yeni Nesil Yapılacaklar Listesi</p>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-list-check mr-3 text-blue-600"></i>Yapılacaklar Listem
+                </h2>
+
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">Yeni Görev Ekle</h3>
+                    <div class="flex flex-col gap-3">
+                        <input type="text" id="manualTaskInput" placeholder="Görevi buraya yazın..."
+                            class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="date" id="manualDueDateInput"
+                            class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="addManualTaskButton"
+                            class="bg-green-600 text-white p-2 rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <i class="fas fa-plus-circle mr-2"></i>Manuel Görev Ekle
+                        </button>
+                    </div>
+                </div>
+
+                <div id="todoList" class="space-y-3">
+                    <p id="noTodosMessage" class="text-gray-500 text-center">Henüz bir göreviniz yok!</p>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-calendar-days mr-3 text-green-600"></i>Takvim
+                </h2>
+                <div id="calendarDisplay" class="calendar-grid">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="fixedChatContainer" class="fixed-chat-container">
+        <div id="chatHeader" class="chat-header">
+            <h3 class="text-lg font-semibold">TaskbuddyAI Sohbet</h3>
+            <button id="toggleChatButton" class="toggle-button">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+        
+        <div class="api-key-input-container">
+            <label for="apiKeyInput" class="text-gray-700 text-sm font-medium">Gemini API Anahtarı:</label>
+            <input type="password" id="apiKeyInput" placeholder="API Anahtarınızı girin..." class="flex-grow p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button id="checkApiKeyButton" class="bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600 transition-colors text-sm">
+                <i class="fas fa-check-circle mr-2"></i><span id="checkButtonText">Kontrol Et</span>
+            </button>
+            <div id="apiStatusIndicator" class="w-4 h-4 rounded-full bg-gray-400 api-status-indicator"></div>
+        </div>
+
+        <div id="chatMessages" class="chat-messages">
+            <div class="ai-message">Merhaba! Ben TaskbuddyAI. Görevlerinizi yönetmenize yardımcı olmak için buradayım.</div>
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" id="chatInput" placeholder="Bir görev ekleyin veya sohbet edin..."
+                class="flex-grow p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="sendMessageButton"
+                class="bg-blue-600 text-white p-3 rounded-r-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const todoListDiv = document.getElementById('todoList');
+        const noTodosMessage = document.getElementById('noTodosMessage');
+        const chatInput = document.getElementById('chatInput');
+        const sendMessageButton = document.getElementById('sendMessageButton');
+        const chatMessagesDiv = document.getElementById('chatMessages');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const checkApiKeyButton = document.getElementById('checkApiKeyButton');
+        const apiStatusIndicator = document.getElementById('apiStatusIndicator');
+        const fixedChatContainer = document.getElementById('fixedChatContainer');
+        const chatHeader = document.getElementById('chatHeader');
+        const toggleChatButton = document.getElementById('toggleChatButton');
+        const calendarDisplay = document.getElementById('calendarDisplay');
+        const checkButtonText = document.getElementById('checkButtonText'); // Yeni eklendi
+
+        // Manuel görev ekleme elementleri
+        const manualTaskInput = document.getElementById('manualTaskInput');
+        const manualDueDateInput = document.getElementById('manualDueDateInput');
+        const addManualTaskButton = document.getElementById('addManualTaskButton');
+
+
+        let currentTodos = []; // Mevcut görevleri tutacak dizi
+        let isMinimized = false; // Chat penceresinin minimize olup olmadığını tutar
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight, startLeft, startTop;
+        let currentApiKey = null; // API anahtarını sadece JS belleğinde tutmak için
+
+        const backendUrl = "http://localhost:8000"; // FastAPI backend URL'si
+        let minChatHeight = 0; // Chat kutusu için minimum yükseklik
+
+        // API anahtarını kontrol et ve durumu güncelle
+        checkApiKeyButton.addEventListener('click', async () => {
+            const key = apiKeyInput.value.trim();
+            await testApiKey(key);
+        });
+
+        // Yeni fonksiyon: API bağlantı durumunu günceller
+        function updateApiStatus(isConnected) {
+            if (isConnected) {
+                apiStatusIndicator.classList.remove('bg-gray-400', 'bg-red-600');
+                apiStatusIndicator.classList.add('bg-green-600');
+                
+                checkApiKeyButton.classList.remove('bg-indigo-500', 'hover:bg-indigo-600', 'bg-red-600', 'hover:bg-red-700');
+                checkApiKeyButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                checkButtonText.textContent = "Doğrulandı";
+            } else {
+                apiStatusIndicator.classList.remove('bg-green-600', 'bg-red-600');
+                apiStatusIndicator.classList.add('bg-gray-400'); // Varsayılana (gri) sıfırla
+
+                checkApiKeyButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
+                checkApiKeyButton.classList.add('bg-indigo-500', 'hover:bg-indigo-600'); // Varsayılan (indigo)
+                checkButtonText.textContent = "Kontrol Et";
+            }
+        }
+
+        // API Anahtarı girişinde değişiklik olduğunda durumu sıfırla
+        apiKeyInput.addEventListener('input', () => {
+            updateApiStatus(false);
+        });
+
+        async function testApiKey(keyToCheck) {
+            const key = keyToCheck || apiKeyInput.value.trim(); // Parametreden veya inputtan al
+            if (!key) {
+                alert('Lütfen bir API Anahtarı girin.');
+                updateApiStatus(false); 
+                return false;
+            }
+
+            try {
+                // Backend'in chat endpoint'ine minimal bir istek göndererek anahtarı doğrula
+                const response = await fetch(`${backendUrl}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // Sadece API anahtarının geçerliliğini test etmek için minimal bir mesaj gönder
+                    body: JSON.stringify({ message: "test", api_key: key, current_todos: [] })
+                });
+
+                if (response.ok) {
+                    currentApiKey = key; // API Anahtarını JS belleğine kaydet
+                    // apiKeyInput.value = ''; // Bu satır kaldırıldı: Inputu maskeli bırakır, temizlemez.
+                    updateApiStatus(true); // Durumu başarılı olarak güncelle
+                    alert('API Anahtarı doğrulandı!');
+                    return true;
+                } else {
+                    const errorData = await response.json().catch(() => ({})); // JSON hatasını yakala
+                    currentApiKey = null; // Hata durumunda anahtarı sıfırla
+                    updateApiStatus(false); // Durumu başarısız olarak güncelle
+                    alert(`API Anahtarı geçersiz veya bir hata oluştu: ${errorData.detail || response.statusText || "Bilinmeyen hata."}`);
+                    return false;
+                }
+            } catch (error) {
+                console.error("API Anahtarı kontrol edilirken hata oluştu:", error);
+                currentApiKey = null; // Hata durumunda anahtarı sıfırla
+                updateApiStatus(false); // Durumu başarısız olarak güncelle
+                alert('API Anahtarı kontrol edilirken bir ağ hatası oluştu.');
+                return false;
+            }
+        }
+
+        // Sohbet penceresini minimize/maximize et
+        toggleChatButton.addEventListener('click', () => {
+            isMinimized = !isMinimized;
+            if (isMinimized) {
+                fixedChatContainer.dataset.customHeight = fixedChatContainer.offsetHeight; // Güncel yüksekliği kaydet
+                chatMessagesDiv.style.display = 'none'; // Sohbet mesajlarını gizle
+                fixedChatContainer.style.height = `${minChatHeight}px`; // Minimum yüksekliğe ayarla
+                toggleChatButton.innerHTML = '<i class="fas fa-plus"></i>'; // Artı ikonu
+            } else {
+                chatMessagesDiv.style.display = 'flex'; // Sohbet mesajlarını göster
+                // Kaydedilmiş özel yüksekliğe geri dön, yoksa varsayılanı kullan
+                fixedChatContainer.style.height = fixedChatContainer.dataset.customHeight ? `${fixedChatContainer.dataset.customHeight}px` : '500px';
+                toggleChatButton.innerHTML = '<i class="fas fa-minus"></i>'; // Eksi ikonu
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Sohbeti en alta kaydır
+            }
+        });
+
+        // Sürükleme ve yeniden boyutlandırma olayları
+        chatHeader.addEventListener('mousedown', (e) => {
+            // Eğer hedef minimize/maximize butonuysa veya onun içindeki ikon ise sürüklemeyi başlatma
+            if (e.target === toggleChatButton || toggleChatButton.contains(e.target)) {
+                return;
+            }
+
+            // Yeniden boyutlandırma köşesine yakınsa yeniden boyutlandırma başlat
+            const rect = fixedChatContainer.getBoundingClientRect();
+            const resizeHandleSize = 20; // Köşeden ne kadar uzakta yeniden boyutlandırma tetikleneceği
+
+            if (e.clientX > rect.right - resizeHandleSize && e.clientY > rect.bottom - resizeHandleSize) {
+                isResizing = true;
+                fixedChatContainer.style.cursor = 'nwse-resize';
+            } else {
+                isDragging = true;
+                fixedChatContainer.style.cursor = 'grabbing';
+            }
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = fixedChatContainer.offsetWidth;
+            startHeight = fixedChatContainer.offsetHeight;
+            startLeft = fixedChatContainer.offsetLeft;
+            startTop = fixedChatContainer.offsetTop;
+
+            fixedChatContainer.style.transition = 'none'; // Sürüklerken animasyonu kapat
+
+            document.addEventListener('mousemove', handleDragOrResize);
+            document.addEventListener('mouseup', stopDragOrResize);
+        });
+
+        function handleDragOrResize(e) {
+            if (isDragging) {
+                const newLeft = startLeft + (e.clientX - startX);
+                const newTop = startTop + (e.clientY - startY);
+
+                // Ekran sınırları içinde kalmasını sağla
+                fixedChatContainer.style.left = Math.max(0, Math.min(newLeft, window.innerWidth - fixedChatContainer.offsetWidth)) + 'px';
+                fixedChatContainer.style.top = Math.max(0, Math.min(newTop, window.innerHeight - fixedChatContainer.offsetHeight)) + 'px';
+            } else if (isResizing) {
+                const newWidth = startWidth + (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+
+                // Minimum boyutlar ve ekran sınırları içinde kalmasını sağla
+                fixedChatContainer.style.width = Math.max(300, newWidth) + 'px';
+                // Minimized moddaki minimum yüksekliği aşmasını engelle
+                fixedChatContainer.style.height = Math.max(minChatHeight, newHeight) + 'px'; 
+                
+                // Yeniden boyutlandırma yapıldığında özel yüksekliği kaydet
+                fixedChatContainer.dataset.customHeight = fixedChatContainer.offsetHeight;
+            }
+        }
+
+        function stopDragOrResize() {
+            isDragging = false;
+            isResizing = false;
+            fixedChatContainer.style.cursor = 'grab';
+            fixedChatContainer.style.transition = ''; // Animasyonu geri aç
+
+            document.removeEventListener('mousemove', handleDragOrResize);
+            document.removeEventListener('mouseup', stopDragOrResize);
+        }
+
+        // Uygulama yüklendiğinde yapılacaklar listesini getir
+        document.addEventListener('DOMContentLoaded', () => {
+            // Calculate initial min-height
+            const headerHeight = chatHeader.offsetHeight;
+            const apiKeyInputHeight = document.querySelector('.api-key-input-container').offsetHeight;
+            const chatInputHeight = document.querySelector('.chat-input-container').offsetHeight;
+            minChatHeight = headerHeight + apiKeyInputHeight + chatInputHeight;
+            fixedChatContainer.style.minHeight = `${minChatHeight}px`; // Apply to CSS
+
+            // Initial height setup
+            if (!fixedChatContainer.dataset.customHeight) { // Eğer daha önce bir yükseklik kaydedilmemişse
+                fixedChatContainer.style.height = '500px'; 
+                fixedChatContainer.dataset.customHeight = 500; // Özel yüksekliği kaydet
+            }
+            updateApiStatus(false); // Başlangıçta API durumu bağlı değil olarak ayarla
+
+            fetchTodos();
+        });
+
+        // Mesajları sohbet kutusuna ekle
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+            messageDiv.textContent = text;
+            chatMessagesDiv.appendChild(messageDiv);
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // En alta kaydır
+        }
+
+        // Yapılacaklar listesini backend'den getir
+        async function fetchTodos() {
+            try {
+                const response = await fetch(`${backendUrl}/todos`);
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+                currentTodos = await response.json();
+                renderTodos();
+                displayCalendar(currentTodos); // Takvimi güncelle
+            } catch (error) {
+                console.error("Görevler getirilirken hata oluştu:", error);
+                addMessage("Görevler yüklenirken bir sorun oluştu. Lütfen konsolu kontrol edin.", 'ai');
+            }
+        }
+
+        // Yapılacaklar listesini HTML'e render et
+        function renderTodos() {
+            todoListDiv.innerHTML = ''; // Mevcut listeyi temizle
+            if (currentTodos.length === 0) {
+                noTodosMessage.style.display = 'block';
+            } else {
+                noTodosMessage.style.display = 'none';
+                currentTodos.forEach(todo => {
+                    const todoItemDiv = document.createElement('div');
+                    todoItemDiv.classList.add('todo-item', 'bg-white', 'rounded-lg', 'shadow-sm', 'p-4', 'mb-2', 'flex', 'items-center', 'justify-between', 'transform', 'transition-all', 'duration-200', 'hover:scale-[1.01]');
+                    todoItemDiv.dataset.id = todo.id; // ID'yi veri özniteliği olarak ekle
+                    if (todo.completed) {
+                        todoItemDiv.classList.add('completed');
+                    }
+
+                    // Görev metni ve tarih için sarıcı div
+                    const taskContentDiv = document.createElement('div');
+                    taskContentDiv.classList.add('flex', 'items-center', 'flex-grow');
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.dataset.id = todo.id;
+                    checkbox.checked = todo.completed;
+                    checkbox.classList.add('form-checkbox', 'h-5', 'w-5', 'text-blue-600', 'rounded', 'mr-4', 'cursor-pointer');
+                    checkbox.onchange = () => toggleTodoStatus(todo.id, checkbox.checked);
+                    taskContentDiv.appendChild(checkbox);
+
+                    const taskTextSpan = document.createElement('span');
+                    taskTextSpan.classList.add('task-text', 'text-lg', 'text-gray-800', 'flex-grow', 'cursor-pointer');
+                    taskTextSpan.textContent = todo.task;
+                    taskTextSpan.dataset.id = todo.id; // Span'a da ID ata
+                    taskTextSpan.onclick = () => enableTaskEdit(todo.id, taskTextSpan); // Düzenlemeyi başlat
+                    taskContentDiv.appendChild(taskTextSpan);
+
+                    const taskDueDateSpan = document.createElement('span');
+                    taskDueDateSpan.classList.add('text-sm', 'text-gray-500', 'ml-4', 'flex-shrink-0', 'cursor-pointer');
+                    if (todo.due_date) {
+                        taskDueDateSpan.innerHTML = `<i class="fas fa-calendar-alt mr-1"></i>${formatDateForDisplay(todo.due_date)}`;
+                    } else {
+                        taskDueDateSpan.textContent = 'Tarih Yok';
+                    }
+                    taskDueDateSpan.dataset.id = todo.id; // Span'a da ID ata
+                    taskDueDateSpan.onclick = () => enableDateEdit(todo.id, taskTextSpan, taskDueDateSpan); // Tarih düzenlemeyi başlat
+                    taskContentDiv.appendChild(taskDueDateSpan);
+
+
+                    todoItemDiv.appendChild(taskContentDiv);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.onclick = () => deleteTodo(todo.id);
+                    deleteButton.classList.add('ml-4', 'p-2', 'rounded-full', 'hover:bg-red-100', 'text-red-600', 'transition-colors');
+                    deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    todoItemDiv.appendChild(deleteButton);
+
+                    todoListDiv.appendChild(todoItemDiv);
+                });
+            }
+        }
+
+        // Görev metnini düzenleme moduna geçir
+        function enableTaskEdit(id, taskTextSpan) { // taskDueDateSpan parametresini kaldırdım, sadece taskTextSpan ile ilgilen
+            // Sadece bir görev düzenlenirken diğer düzenlemeleri engelle
+            if (taskTextSpan.querySelector('input')) return;
+
+            const currentText = taskTextSpan.textContent;
+            const textInput = document.createElement('input');
+            textInput.type = 'text';
+            textInput.value = currentText;
+            textInput.classList.add('p-1', 'border', 'border-gray-300', 'rounded-md', 'flex-grow', 'focus:outline-none', 'focus:ring-1', 'focus:ring-blue-400');
+            
+            taskTextSpan.innerHTML = ''; // Eski span içeriğini temizle
+            taskTextSpan.appendChild(textInput);
+            textInput.focus();
+
+            const saveChanges = async () => {
+                const newText = textInput.value.trim();
+                const currentTodo = currentTodos.find(t => t.id === id);
+                if (newText && newText !== currentText) {
+                    await updateTodoTask(id, newText, currentTodo.due_date);
+                } else {
+                    // Değişiklik yoksa veya boşsa eski metni geri getir
+                    taskTextSpan.textContent = currentText;
+                }
+            };
+
+            textInput.addEventListener('blur', saveChanges);
+            textInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    textInput.blur(); // blur olayını tetikleyerek kaydet
+                }
+            });
+        }
+
+        // Görev tarihini düzenleme moduna geçir
+        function enableDateEdit(id, taskTextSpan, taskDueDateSpan) { // taskTextSpan parametresini kaldırdım, sadece taskDueDateSpan ile ilgilen
+             // Sadece bir görev düzenlenirken diğer düzenlemeleri engelle
+            if (taskDueDateSpan.querySelector('input')) return;
+
+            const currentTodo = currentTodos.find(t => t.id === id);
+            const currentDueDate = currentTodo.due_date || ''; // YYYY-MM-DD stringi
+
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.value = currentDueDate;
+            dateInput.classList.add('p-1', 'border', 'border-gray-300', 'rounded-md', 'focus:outline-none', 'focus:ring-1', 'focus:ring-blue-400', 'ml-4', 'flex-shrink-0');
+            
+            taskDueDateSpan.innerHTML = ''; // Eski span içeriğini temizle
+            taskDueDateSpan.appendChild(dateInput);
+            dateInput.focus();
+
+            const saveChanges = async () => {
+                const newDueDate = dateInput.value; // YYYY-MM-DD stringi
+                if (newDueDate !== currentDueDate) {
+                    await updateTodoTask(id, currentTodo.task, newDueDate || null); // Boşsa null gönder
+                } else {
+                    // Değişiklik yoksa eski metni geri getir
+                    taskDueDateSpan.innerHTML = currentTodo.due_date ? `<i class="fas fa-calendar-alt mr-1"></i>${formatDateForDisplay(currentTodo.due_date)}` : 'Tarih Yok';
+                }
+            };
+
+            dateInput.addEventListener('blur', saveChanges);
+            dateInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    dateInput.blur(); // blur olayını tetikleyerek kaydet
+                }
+            });
+        }
+
+
+        // Tarih formatını kullanıcıya gösterim için ayarla (YYYY-MM-DD -> DD Month YYYY)
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString + 'T00:00:00'); // Saat dilimi sorununu gidermek için
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('tr-TR', options);
+            } catch (e) {
+                console.error("Tarih formatlama hatası:", dateString, e);
+                return dateString; // Hata durumunda ham stringi göster
+            }
+        }
+
+        // Görev durumu değiştir (tamamlandı/tamamlanmadı)
+        async function toggleTodoStatus(id, completed) {
+            try {
+                const todoToUpdate = currentTodos.find(todo => todo.id === id);
+                if (!todoToUpdate) {
+                    console.error("Güncellenecek görev bulunamadı:", id);
+                    return;
+                }
+
+                const response = await fetch(`${backendUrl}/todos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        id: todoToUpdate.id, // ID'yi de gönder
+                        task: todoToUpdate.task, // Task'ı da gönder
+                        completed: completed, // Sadece completed durumunu güncelle
+                        due_date: todoToUpdate.due_date // due_date'i de gönder
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+                await response.json();
+                fetchTodos(); // Listeyi yeniden getir
+            } catch (error) {
+                    console.error("Görev durumu güncellenirken hata oluştu:", error);
+                    let errorMessage = "Görev durumu güncellenirken bir hata oluştu.";
+                    if (error.message.includes("404")) {
+                        errorMessage = "Güncellenmeye çalışılan görev bulunamadı.";
+                    } else if (error.message.includes("500")) {
+                        errorMessage = "Sunucu tarafında bir hata oluştu.";
+                    }
+                    addMessage(errorMessage, 'ai');
+            }
+        }
+        
+        // Görev açıklaması ve tarihi güncelleme
+        async function updateTodoTask(id, newText, newDueDate) {
+            try {
+                const todoToUpdate = currentTodos.find(todo => todo.id === id);
+                if (!todoToUpdate) {
+                    console.error("Güncellenecek görev bulunamadı:", id);
+                    return;
+                }
+
+                const response = await fetch(`${backendUrl}/todos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: todoToUpdate.id,
+                        task: newText,
+                        completed: todoToUpdate.completed,
+                        due_date: newDueDate || null // Boş string yerine null gönder
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+                await response.json();
+                fetchTodos(); // Listeyi ve takvimi yeniden render et
+                addMessage("Görev başarıyla güncellendi.", 'ai');
+            } catch (error) {
+                console.error("Görev güncellenirken hata oluştu:", error);
+                addMessage("Görev güncellenirken bir sorun oluştu.", 'ai');
+            }
+        }
+
+
+        // Görevi sil
+        async function deleteTodo(id) {
+            if (!confirm("Bu görevi silmek istediğinize emin misiniz?")) {
+                return;
+            }
+            try {
+                const response = await fetch(`${backendUrl}/todos/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+                fetchTodos(); // Listeyi yeniden getir
+            } catch (error) {
+                console.error("Görev silinirken hata oluştu:", error);
+                addMessage("Görev silinirken bir hata oluştu.", 'ai');
+            }
+        }
+
+        // Manuel görev ekleme butonu
+        addManualTaskButton.addEventListener('click', addManualTodo);
+
+        async function addManualTodo() {
+            const taskText = manualTaskInput.value.trim();
+            const dueDate = manualDueDateInput.value; // YYYY-MM-DD formatında string
+            if (!taskText) {
+                alert('Lütfen bir görev açıklaması girin.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendUrl}/todos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: taskText, completed: false, due_date: dueDate || null }) // Send null if empty
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP hata kodu: ${response.status}`);
+                }
+                const newTodo = await response.json();
+                console.log("Manuel görev eklendi:", newTodo);
+                manualTaskInput.value = ''; // Inputları temizle
+                manualDueDateInput.value = '';
+                fetchTodos(); // Listeyi yeniden getir
+                addMessage("Manuel göreviniz başarıyla eklendi.", 'ai');
+            } catch (error) {
+                console.error("Manuel görev eklenirken hata oluştu:", error);
+                addMessage("Manuel görev eklenirken bir sorun oluştu.", 'ai');
+            }
+        }
+
+        // Takvim Oluşturma ve Görevleri İşaretleme
+        function displayCalendar(todos) {
+            calendarDisplay.innerHTML = ''; // Takvimi temizle
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Sadece tarih karşılaştırması için
+
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                                "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            const dayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+
+            // Ay başlığını ekle (örn: Temmuz 2025)
+            const currentMonthYear = document.createElement('div');
+            currentMonthYear.classList.add('col-span-7', 'text-xl', 'font-bold', 'text-center', 'mb-3', 'text-blue-800');
+            currentMonthYear.textContent = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+            calendarDisplay.appendChild(currentMonthYear);
+
+            // Gün başlıklarını ekle (Pzt, Sal, ...)
+            dayNames.forEach(day => {
+                const header = document.createElement('div');
+                header.classList.add('calendar-day-header');
+                header.textContent = day;
+                calendarDisplay.appendChild(header);
+            });
+
+            // Ayın ilk gününün haftanın hangi günü olduğunu bul
+            // JavaScript getDay() Pazar'ı 0, Pazartesi'yi 1 döndürür.
+            // Bizim için Pazartesi'yi 0 yapmak için düzenleme yapıldı.
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            let firstDayWeekday = firstDayOfMonth.getDay(); // 0 (Paz) - 6 (Cmt)
+            // Pazartesi'yi 0 yapmak için dönüştür
+            firstDayWeekday = (firstDayWeekday === 0) ? 6 : firstDayWeekday - 1; // Pazar (0) ise 6'ya çek, diğerlerini 1 azalt
+
+            // Ayın ilk gününden önceki boş günleri ekle
+            for (let i = 0; i < firstDayWeekday; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.classList.add('calendar-day', 'bg-gray-100'); // Gri veya daha açık bir renk
+                calendarDisplay.appendChild(emptyDay);
+            }
+
+            // Ayın günlerini ekle
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.classList.add('calendar-day');
+                dayDiv.textContent = i;
+
+                const currentDay = new Date(today.getFullYear(), today.getMonth(), i);
+                currentDay.setHours(0, 0, 0, 0);
+
+                if (currentDay.toDateString() === today.toDateString()) {
+                    dayDiv.classList.add('today');
+                }
+
+                // Bu güne denk gelen görevleri kontrol et
+                const tasksOnThisDay = todos.filter(todo => {
+                    if (todo.due_date) {
+                        try {
+                            const todoDate = new Date(todo.due_date + 'T00:00:00'); // Zaman dilimi sorununu gidermek için
+                            todoDate.setHours(0, 0, 0, 0); // Sadece tarih karşılaştırması
+                            return todoDate.toDateString() === currentDay.toDateString();
+                        } catch (e) {
+                            console.error("Geçersiz tarih formatı algılandı (takvim):", todo.due_date, e);
+                            return false;
+                        }
+                    }
+                    return false;
+                });
+
+                if (tasksOnThisDay.length > 0) {
+                    dayDiv.classList.add('has-task');
+                    // Görev başlıklarını araç ipucu olarak ekleyebilirsiniz
+                    dayDiv.title = tasksOnThisDay.map(t => t.task).join('\n'); // Her görevi yeni satıra
+                }
+
+                calendarDisplay.appendChild(dayDiv);
+            }
+        }
+
+        // Mesaj gönderme işlevi
+        sendMessageButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            // API anahtarını sadece JS belleğinden al
+            const apiKey = currentApiKey; 
+
+            if (!message) return;
+
+            addMessage(message, 'user');
+            chatInput.value = ''; // Mesajı gönderdikten sonra input'u temizle
+
+            if (!apiKey) {
+                addMessage("Lütfen Gemini API Anahtarınızı giriniz ve 'Kontrol Et' butonuna tıklayınız. Yapay zeka özellikleri için bu gereklidir.", 'ai');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${backendUrl}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, api_key: apiKey, current_todos: currentTodos })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Backend yanıt hatası:", response.status, errorText);
+                    throw new Error(`API isteği başarısız oldu: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                addMessage(data.ai_response, 'ai'); // AI yanıtını göster
+
+                // Her durumda listeyi yeniden çekelim, böylece UI her zaman güncel kalır.
+                fetchTodos(); 
+
+            } catch (error) {
+                console.error("Mesaj gönderilirken veya yanıt işlenirken hata oluştu:", error);
+                addMessage(`Üzgünüm, bir hata oluştu: ${error.message}. Lütfen daha sonra tekrar deneyin veya API anahtarınızı kontrol edin.`, 'ai');
+            }
+        }
+    </script>
+</body>
+</html>
