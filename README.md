@@ -93,6 +93,8 @@ Sprint Puanı : 39
 | **Toplam**                |      |      |        | **39** |
 
 Total Yapılan işler :
+<img width="1080" height="646" alt="Ekran görüntüsü 2025-07-29 142410" src="https://github.com/user-attachments/assets/0c238802-4af0-4fa0-b5b1-988c3429e986" />
+
 <img width="1064" height="652" alt="Ekran görüntüsü 2025-07-29 140819" src="https://github.com/user-attachments/assets/e49b6109-ea86-4cae-a249-834bc2d91e4b" />
 
 
